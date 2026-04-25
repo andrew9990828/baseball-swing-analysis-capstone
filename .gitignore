@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+.vscode/
+
+# Environment variables
+.env
+
+# Raw video/data files
+data/raw/*
+data/processed/*
+data/samples/*
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/samples/.gitkeep
+
+# Generated outputs
+outputs/debug_frames/*
+outputs/plots/*
+outputs/report/*
+
+# Keep output folders
+!outputs/debug_frames/.gitkeep
+!outputs/plots/.gitkeep
+!outputs/report/.gitkeep
+
+# Jupyter
+.ipynb_checkpoints/
