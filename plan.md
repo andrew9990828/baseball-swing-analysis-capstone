@@ -179,7 +179,6 @@ Convert metrics into statements using rules:
 ### Software Utilized
 
 **OpenCV**
-
 - free and easy to ingest videos and capture key frames
 - simple and straightforward
 - easy stack to google, learn, and apply
@@ -244,17 +243,156 @@ Module 1 is complete enough to move forward.
 **Purpose:** Run an external pose model and standardize output.
 
 ### Responsibilities
-- call pose estimator
-- extract key landmarks per frame
-- collect confidence values
-- save raw keypoint output
+- call pose estimator     # Completed 4/27/26 completed pose_estimator.py which contains the classes and methods to analyze each frame to apply a pose
+- extract key landmarks per frame      # Completed 4/27/26 completed pose_estimator.py which contains the classes and methods to analyze each frame to apply a pose
+- collect confidence values        # Completed 4/27/26 completed pose_estimator.py which contains the classes and methods to analyze each frame to apply a pose
+- save raw keypoint output         # Completed 4/27/26 completed pose_estimator.py which contains the classes and methods to analyze each frame to apply a pose
 
 ### Outputs
-- per-frame landmark arrays
-- confidence arrays
-- raw pose data file
+- per-frame landmark arrays # Completed 4/27/26 completed pose_pipeline.py which processes each frame and estimates each 33 landmarks and 4 components (x,y,z,confidence) 
+- confidence arrays # Completed 4/27/26 completed pose_pipeline.py which processes each frame and estimates each 33 landmarks and 4 components (x,y,z,confidence)
+- raw pose data file  # Completed 4/27/26 completed pose_pipeline.py which processes each frame and estimates each 33 landmarks and 4 components (x,y,z,confidence)
 
----
+### Module 2 Completion Notes — Pose Extraction Interface
+
+**Completed:** 4/27/26
+
+Module 2 is complete for the first version of the project. The system can now take the frames from a raw baseball swing video, run a pose estimation model on each frame, draw visual debug landmarks, and save the raw landmark data into a structured NumPy `.npz` file.
+
+The completed output for the current test video produced:
+
+```txt
+66 frames × 33 landmarks × 4 components
+
+Saved landmark shape:
+
+(66, 33, 4)
+
+Meaning:
+
+axis 0 = frame over time
+axis 1 = MediaPipe landmark index
+axis 2 = x, y, z, visibility
+What was built
+pose_estimator.py
+contains PoseFrameResult
+contains MediaPipePoseEstimator
+runs MediaPipe Pose on one frame
+returns one frame’s landmark data as a structured result
+can draw pose landmarks on a debug frame
+pose_pipeline.py
+opens the video
+loops through every frame
+calls the pose estimator
+collects landmark arrays and confidence/visibility values
+saves debug images
+stacks all frames into one (num_frames, 33, 4) array
+saves raw pose data to .npz
+main.py
+launches the Module 2 pose extraction pipeline with the selected video paths
+Architecture lesson
+
+This module showed why separating files matters.
+
+pose_estimator.py = process one frame
+pose_pipeline.py = process the full video
+main.py = launch the pipeline
+
+This made the project easier to reason about because each file has one job.
+
+Key idea:
+
+Class = reusable tool/object
+Method = action attached to that object
+Pipeline = sequence of steps using those tools
+Main = launch point
+Python class lesson
+
+The MediaPipePoseEstimator class stores the MediaPipe model internally.
+
+Instead of the pipeline needing to understand every MediaPipe detail, it can simply call:
+
+result = estimator.estimate_frame(frame, frame_index)
+
+The PoseFrameResult dataclass acts like a clean container for one frame’s pose result:
+
+frame_index
+landmarks: shape (33, 4)
+pose_detected
+
+This helped clarify how classes and dataclasses can organize code and data in a larger project.
+
+Why MediaPipe was chosen
+
+MediaPipe was chosen because this is a single-person baseball swing analysis project.
+
+The 33 landmarks give more detailed body information than smaller pose models, which should help later with:
+
+head movement
+shoulder movement
+hip movement
+wrist/hand path
+stride behavior
+front-side stability
+posture through contact and follow-through
+
+The debug images confirmed MediaPipe tracked the hitter well enough to continue.
+
+Stack compatibility lesson
+
+A major lesson was that software stacks are version-dependent.
+
+The first setup used:
+
+Python 3.13
+MediaPipe 0.10.35
+
+That failed because the needed mp.solutions.pose API was not available.
+
+The working setup became:
+
+Python 3.10.11
+MediaPipe 0.10.14
+OpenCV
+NumPy
+project-specific .venv
+
+Important dependency pin:
+
+mediapipe==0.10.14
+
+Main lesson:
+
+A stack is not just a library.
+It also includes Python version, package version, OS, virtual environment, and API compatibility.
+Current limitations
+hand/wrist landmarks may be noisy during fast motion
+the bat is not tracked
+occlusion can affect hands and arms
+landmarks may jitter between frames
+video quality and camera angle affect accuracy
+Next step
+
+Module 3 should focus on processing the raw landmark data before making swing claims.
+
+Planned Module 3 focus:
+
+load .npz pose data
+name important landmarks
+separate coordinates from visibility/confidence
+inspect unreliable points
+smooth noisy landmark paths if needed
+prepare clean data for feature extraction
+Status
+
+Module 2 is complete enough to move forward.
+
+raw swing video
+→ frame-by-frame pose estimation
+→ debug skeleton images
+→ saved NumPy landmark data
+
+
 
 ## Module 3: Landmark Processing
 **Purpose:** Turn noisy pose output into usable motion data.

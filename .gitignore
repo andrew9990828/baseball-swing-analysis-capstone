@@ -28,11 +28,13 @@ data/samples/*
 
 # Generated outputs
 outputs/debug_frames/*
+outputs/debug_pose/*
 outputs/plots/*
 outputs/report/*
 
 # Keep output folders
 !outputs/debug_frames/.gitkeep
+!outputs/debug_pose/.gitkeep
 !outputs/plots/.gitkeep
 !outputs/report/.gitkeep
 

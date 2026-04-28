@@ -1,20 +1,32 @@
-from src.io.video_loader import load_video_metadata
-from src.io.video_loader import extract_frames_with_timestamps
-from src.visualization.frame_saver import save_debug_frames
+"""
+Author: Andrew Bieber <andrewbieber.work@gmail.com>
+File: main.py
+Description:
+    Main entry point for the baseball swing analysis capstone project.
 
-def main():
+Last Updated: 4/27/26
+"""
+
+from src.processing.pose_pipeline import extract_pose_from_video
+
+
+def main() -> None:
+    """
+    Run the current Module 2 pose extraction pipeline.
+    """
+
     video_path = "data/raw/mike_trout_swing_01.mp4"
-    metadata = load_video_metadata(video_path)
+    output_path = "data/processed/pose/mike_trout_swing_01_pose_raw.npz"
+    debug_dir = "outputs/debug_pose"
 
-    print("Video loaded successfully.")
-    print(f"Path: {metadata['path']}")
-    print(f"FPS: {metadata['fps']:.2f}")
-    print(f"Frame count: {metadata['frame_count']}")
-    print(f"Resolution: {metadata['width']} x {metadata['height']}")
-    print(f"Duration: {metadata['duration']:.2f} seconds")
-    
-    frames_with_timestamps = extract_frames_with_timestamps(video_path)
-    save_debug_frames(frames_with_timestamps, "outputs/debug_frames")
+    extract_pose_from_video(
+        video_path=video_path,
+        output_path=output_path,
+        debug_dir=debug_dir,
+        max_frames=None,
+        debug_every_n_frames=10,
+    )
+
 
 if __name__ == "__main__":
     main()
