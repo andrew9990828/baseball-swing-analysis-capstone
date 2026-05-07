@@ -322,7 +322,7 @@ pose_detected
 
 This helped clarify how classes and dataclasses can organize code and data in a larger project.
 
-Why MediaPipe was chosen
+Why I Chose MediaPipe
 
 MediaPipe was chosen because this is a single-person baseball swing analysis project.
 
@@ -392,20 +392,73 @@ raw swing video
 → debug skeleton images
 → saved NumPy landmark data
 
+---
+
+### Module 3 Completion Notes**Completed:** 
+4/30/26
+
+Module 3 is complete for the first version of the project. The system can now load the raw pose output from Module 2, extract the landmark array, smooth landmark movement, normalize the coordinates around the hitter’s body, and save a cleaned landmark file.
+
+#### What was built
+- `load_landmarks(input_path)`
+- loads the saved Module 2 `.npz` pose file  
+- extracts the `landmarks` array from the archive
+- `inspect_landmarks(landmarks)`  
+- prints landmark shape, frame count, landmark count, and value range
+- `smooth_trajectory(trajectory, window_size)`  
+- smooths one landmark trajectory over time using a moving average
+- `smooth_all_landmarks(landmarks, window_size)`  
+- applies smoothing to all 33 landmarks across all frames
+- `get_body_center(landmarks)`  
+- calculates hip center using left hip and right hip landmarks
+- `normalize_to_body_center(landmarks)`  
+- subtracts hip center from all landmark positions
+- `process_landmarks(input_path, output_path, smoothing_window)`  
+- runs the full Module 3 pipeline#### Engineering decisions
+- Module 2 saved pose data as a `.npz` file, not a direct `.npy` array.  
+- The `.npz` contains `landmarks`, `frame_indices`, and `pose_detected`.  
+- Module 3 specifically loads `landmarks`.
+- The landmark shape is:```text(num_frames, num_landmarks, 4)
+
+For the test video:
+(66, 33, 4)
+
+Meaning:
+
+66 frames33 MediaPipe landmarks4 values: x, y, z, visibility
+
+Smoothing uses a moving average over nearby frames.
+
+Too small of a window keeps jitter.
+
+Too large of a window can blur fast swing movement.
+
+Current smoothing choice:
+
+smooth_trajectory() default = 5
+
+smooth_all_landmarks() default = 3
+
+process_landmarks() uses 3
 
 
-## Module 3: Landmark Processing
-**Purpose:** Turn noisy pose output into usable motion data.
+I chose 3 for the full pipeline because a baseball swing is fast, and preserving timing matters more than making the data overly smooth.
 
-### Responsibilities
-- smoothing
-- interpolation for small gaps
-- normalization
-- reference frame handling
+Visibility is not smoothed.
 
-### Outputs
-- cleaned trajectories
-- normalized trajectories
+x, y, z are position values.
+
+visibility is a confidence value.
+
+
+Normalization uses hip center:
+
+hip_center = (left_hip + right_hip) / 2
+This makes movement body-relative instead of screen-relative.
+Output
+data/processed/pose/mike_trout_swing_01_pose_cleaned.npy
+Status
+Module 3 is complete enough to move forward to Module 4: Event / Phase Detection.
 
 ---
 
@@ -421,6 +474,56 @@ raw swing video
 ### Outputs
 - event frame indices
 - phase labels / time windows
+
+### Module 4 Completion Notes
+
+**Completed:** 5/1/26
+
+Module 4 is complete for the first version of the project. The system can now load cleaned landmark data from Module 3, calculate a wrist-based hand speed proxy, detect rough swing event frames, and save those events to a JSON file.
+
+#### What was built
+
+- `event_detector.py`
+  - defines `SwingEvents`
+  - defines `SwingEventDetector`
+  - extracts wrist landmarks
+  - calculates frame-to-frame wrist speed
+  - detects movement start
+  - detects peak hand speed
+  - estimates contact proxy
+
+- `event_pipeline.py`
+  - loads cleaned landmark data
+  - runs the event detector
+  - saves detected events as JSON
+
+#### Engineering decisions
+
+- Wrist movement is used as the first v1 swing signal.
+  - MediaPipe does not track the bat or ball.
+  - The wrists are the closest available body landmarks to the bat/hands.
+
+- Hand speed proxy uses the max speed between left and right wrists.
+  - This avoids needing to know hitter handedness in v1.
+
+- Movement start is detected when hand speed passes a percentage of max hand speed.
+
+- Peak hand speed is the frame with the highest wrist-speed proxy.
+
+- Contact is currently a proxy, not true contact detection.
+  - Since bat/ball contact is not tracked, contact is estimated a few frames after peak hand speed.
+
+#### Test Output
+
+```json
+{
+    "movement_start": 3,
+    "peak_hand_speed": 18,
+    "contact_proxy": 21
+}
+Status
+
+Module 4 is complete enough to move forward to Module 5: Feature Extraction.
 
 ---
 
