@@ -528,34 +528,801 @@ Module 4 is complete enough to move forward to Module 5: Feature Extraction.
 ---
 
 ## Module 5: Feature Extraction
-**Purpose:** Compute interpretable mechanics metrics.
+
+**Purpose:** Compute interpretable baseball swing mechanics metrics from cleaned pose landmarks and detected swing events.
+
+Module 5 is the first module where the project starts turning raw movement data into actual swing measurements. The goal is not to give coaching advice yet. The goal is to calculate useful numbers that can later be interpreted by a feedback module.
 
 ### Responsibilities
-- calculate motion-based features
+
+- calculate motion-based swing features
 - compare body regions over time
-- derive timing relationships
-- produce metrics with units / normalized units
+- derive timing relationships between detected swing events
+- produce metrics with clear units or normalized units
+- save the extracted features in a readable format
 
 ### Outputs
+
 - feature dictionary
-- metric tables
-- time-series arrays
+- saved feature JSON file
+- frame-based timing values
+- normalized movement values
+- angle-based rotation proxy values
+
+---
+
+### Module 5 Completion Notes
+
+**Completed:** 5/18/26
+
+Module 5 is complete for the first version of the project. The system can now load cleaned pose landmarks from Module 3, load detected swing events from Module 4, calculate basic swing mechanics features, and save the results as a JSON file.
+
+This module helped connect the earlier parts of the pipeline:
+
+```text
+Module 3 cleaned landmarks
++ Module 4 detected events
+→ Module 5 extracted swing features
+```
+
+---
+
+### What was built
+
+- `feature_extractor.py`
+  - defines `SwingFeatures`
+  - defines `SwingFeatureExtractor`
+  - stores cleaned landmark data and detected event frames
+  - calculates head movement from movement start to contact proxy
+  - calculates average hand path distance from movement start to contact proxy
+  - calculates hip drift from movement start to contact proxy
+  - calculates shoulder angle change from movement start to contact proxy
+  - calculates timing relationships between swing events
+
+- `feature_pipeline.py`
+  - loads cleaned landmark data
+  - loads detected event JSON data
+  - creates the `SwingFeatureExtractor` object
+  - runs all feature calculations
+  - saves extracted features as a JSON file
+
+- `main.py`
+  - temporarily runs the Module 5 feature extraction pipeline
+  - prints the extracted features to the terminal for inspection
+
+---
+
+### Current input files
+
+```text
+data/processed/pose/mike_trout_swing_01_pose_cleaned.npy
+data/processed/events/mike_trout_swing_01_events.json
+```
+
+The cleaned landmark file contains pose data with shape:
+
+```text
+(num_frames, 33, 4)
+```
+
+Meaning:
+
+```text
+axis 0 = frame over time
+axis 1 = MediaPipe landmark index
+axis 2 = x, y, z, visibility
+```
+
+The event JSON contains detected swing event frames:
+
+```json
+{
+    "movement_start": 3,
+    "peak_hand_speed": 18,
+    "contact_proxy": 21
+}
+```
+
+---
+
+### Current output file
+
+```text
+data/processed/features/mike_trout_swing_01_features.json
+```
+
+Example output from the first test run:
+
+```text
+head_movement_start_to_contact: 0.023977333679795265
+hand_path_start_to_contact: 0.35641882877098396
+hip_drift_start_to_contact: 1.4901161193847656e-08
+shoulder_angle_change_start_to_contact: 48.16871643066406
+frames_start_to_contact: 18
+frames_start_to_peak_hand_speed: 15
+frames_peak_hand_speed_to_contact: 3
+```
+
+---
+
+### Engineering decisions
+
+The main design decision in this module was modularity.
+
+The feature extraction logic was separated from the pipeline logic:
+
+```text
+feature_extractor.py = owns the swing feature calculations
+feature_pipeline.py = owns loading files, running the extractor, and saving output
+main.py = launch point for testing the module
+```
+
+This kept the project easy to reason about.
+
+The `SwingFeatureExtractor` class acts as the main object for Module 5. It stores:
+
+```text
+cleaned landmark array
+detected swing event frames
+feature calculation methods
+```
+
+This made the module feel organized because each method calculates one specific swing metric.
+
+---
+
+### Why NumPy fits this module
+
+NumPy works well here because the swing data is already structured as arrays.
+
+The main landmark array is:
+
+```text
+frames × landmarks × values
+```
+
+For the current test video:
+
+```text
+66 frames × 33 landmarks × 4 values
+```
+
+This means the full swing can be treated as motion data over time.
+
+Even when a feature returns one number, that number comes from calculations across multiple frames.
+
+Examples:
+
+```text
+head movement = distance between nose position at movement start and contact proxy
+hand path = total wrist movement across consecutive frames
+shoulder angle change = angle difference between two event frames
+timing = frame difference between detected events
+```
+
+This showed why NumPy is useful even when the final output is a single number.
+
+---
+
+### Current feature meanings
+
+#### Head Movement
+
+```text
+head_movement_start_to_contact
+```
+
+Measures how far the nose landmark moved from movement start to contact proxy.
+
+This is a v1 proxy for head stability.
+
+The first test produced a very small value, which directionally makes sense because the sample swing is Mike Trout and his head movement should be controlled.
+
+---
+
+#### Hand Path Distance
+
+```text
+hand_path_start_to_contact
+```
+
+Measures the average wrist path distance from movement start to contact proxy.
+
+This uses both wrist landmarks and averages their total movement path.
+
+This should normally be much larger than head movement because the hands are supposed to move during the swing while the head should remain more stable.
+
+---
+
+#### Hip Drift
+
+```text
+hip_drift_start_to_contact
+```
+
+Measures hip center movement from movement start to contact proxy.
+
+The first test produced a value near zero:
+
+```text
+1.4901161193847656e-08
+```
+
+This revealed an important issue.
+
+Module 3 normalized every frame around the hip center. Because of that, the hip center is basically forced to stay near the origin. This means hip drift cannot be measured correctly from the normalized landmark file.
+
+This is not a math bug. It is a data-design issue.
+
+Design implication:
+
+```text
+normalized landmarks = useful for body-relative mechanics
+non-normalized cleaned landmarks = needed for whole-body movement features
+```
+
+Future improvement:
+
+```text
+Save both cleaned non-normalized landmarks and normalized landmarks.
+```
+
+Then use:
+
+```text
+normalized data → body-relative features
+non-normalized cleaned data → body translation / drift features
+```
+
+---
+
+#### Shoulder Angle Change
+
+```text
+shoulder_angle_change_start_to_contact
+```
+
+Measures the angle change of the shoulder line from movement start to contact proxy.
+
+This uses the line between the left shoulder and right shoulder landmarks.
+
+Unlike the distance metrics, this output is in degrees.
+
+The first test produced:
+
+```text
+48.16871643066406 degrees
+```
+
+This is directionally believable for a shoulder rotation proxy during a swing.
+
+---
+
+#### Timing Features
+
+```text
+frames_start_to_contact
+frames_start_to_peak_hand_speed
+frames_peak_hand_speed_to_contact
+```
+
+These values measure timing relationships between detected swing events.
+
+The first test produced:
+
+```text
+frames_start_to_contact = 18
+frames_start_to_peak_hand_speed = 15
+frames_peak_hand_speed_to_contact = 3
+```
+
+If the video is 30 FPS, then:
+
+```text
+18 frames / 30 FPS = 0.60 seconds
+15 frames / 30 FPS = 0.50 seconds
+3 frames / 30 FPS = 0.10 seconds
+```
+
+These frame-based timing values are useful because they connect the swing events into measurable relationships.
+
+---
+
+### Unit clarification
+
+The distance-based metrics are not inches, centimeters, feet, or meters.
+
+They are currently measured in normalized landmark coordinate units.
+
+This means the values are best used for relative comparison, such as:
+
+```text
+head movement compared to hand path
+movement during one phase compared to another phase
+body part stability within the same video
+comparison between videos processed the same way
+```
+
+They should not yet be treated as exact real-world physical measurements.
+
+Angle values are in degrees.
+
+Timing values are in frames.
+
+---
+
+### Important observation from testing
+
+The first Module 5 test showed that several metrics are already directionally useful:
+
+```text
+head movement
+hand path distance
+shoulder angle change
+timing relationships
+```
+
+Since the sample video is Mike Trout, the low head movement and clean timing seemed believable.
+
+The biggest discovery was that hip drift is not useful yet because the landmark data had already been normalized around the hip center.
+
+This helped clarify that different features may require different versions of the landmark data.
+
+---
+
+### Project ownership lesson
+
+Module 5 showed that the project is becoming easier to understand because of the modular structure.
+
+At this point, the project is not just copied code. The design is becoming clear:
+
+```text
+Module 1 = get the video
+Module 2 = extract pose landmarks
+Module 3 = clean and normalize the landmarks
+Module 4 = detect important swing events
+Module 5 = measure what happened during those events
+```
+
+This module also showed the value of daily coding practice. The Python is becoming easier to read, the class structure makes more sense, and the project feels more owned instead of just generated.
+
+The main lesson from Module 5 is:
+
+```text
+Good software structure makes the math easier to test.
+Good testing makes the design decisions clearer.
+```
+
+---
+
+### Status
+
+Module 5 is complete enough for v1.
+
+Current status:
+
+```text
+cleaned pose landmarks
++ detected swing events
+→ extracted swing feature JSON
+```
+
+The next step is to visually compare the metrics against the swing video and decide which features are useful enough to keep.
+
+Module 5 should not be overbuilt yet. The current version is enough to support the next stage: feedback and interpretation.
 
 ---
 
 ## Module 6: Feedback Engine
-**Purpose:** Turn metrics into evidence-backed feedback.
+
+**Purpose:** Turn extracted swing metrics into evidence-backed feedback.
+
+Module 6 takes the feature values from Module 5 and applies simple rule-based logic to generate readable feedback. The goal of this module is not to be perfect or scientifically final yet. The goal is to prove that the system can take swing measurements and turn them into useful explanations with numeric evidence.
 
 ### Responsibilities
-- apply rules to features
-- generate statements
-- attach numeric evidence
-- attach confidence or warning flags
+
+- apply rules to extracted features
+- generate feedback statements
+- attach numeric evidence to each statement
+- attach confidence levels
+- attach warning flags for known limitations
+- keep feedback separate from feature calculation
 
 ### Outputs
+
 - feedback statements
 - explanation text
-- issue flags
+- issue / warning / good status flags
+- numeric evidence
+- confidence labels
+- known limitation warnings
+
+---
+
+### Module 6 Completion Notes
+
+**Completed:** 5/18/26
+
+Module 6 is complete for the first version of the project. The system can now take the extracted feature dictionary from Module 5 and generate rule-based feedback using hardcoded v1 thresholds.
+
+This module connects:
+
+```text
+Module 5 extracted swing features
+→ Module 6 feedback statements
+```
+
+Module 5 answers:
+
+```text
+What are the numbers?
+```
+
+Module 6 answers:
+
+```text
+What do the numbers suggest?
+```
+
+---
+
+### What was built
+
+- `feedback_engine.py`
+  - defines `FeedbackEngine`
+  - receives the feature dictionary from Module 5
+  - evaluates head stability
+  - evaluates hand path distance
+  - evaluates shoulder rotation proxy
+  - evaluates swing timing
+  - adds known limitation warnings
+  - generates a summary
+  - returns feedback as a dictionary
+
+- `main.py`
+  - temporarily runs Module 5 feature extraction
+  - passes the feature output into Module 6
+  - prints summary, feedback statements, evidence, confidence, and warnings
+
+---
+
+### Current input
+
+Module 6 currently receives the feature dictionary created by Module 5.
+
+Example input:
+
+```text
+head_movement_start_to_contact: 0.023977333679795265
+hand_path_start_to_contact: 0.35641882877098396
+hip_drift_start_to_contact: 1.4901161193847656e-08
+shoulder_angle_change_start_to_contact: 48.16871643066406
+frames_start_to_contact: 18
+frames_start_to_peak_hand_speed: 15
+frames_peak_hand_speed_to_contact: 3
+```
+
+---
+
+### Current output
+
+Module 6 produces a feedback dictionary with this general structure:
+
+```text
+summary
+feedback
+warnings
+```
+
+Each feedback item includes:
+
+```text
+metric
+status
+statement
+evidence
+confidence
+```
+
+Example structure:
+
+```json
+{
+    "summary": "Swing metrics are mostly within the expected v1 ranges based on the current rule-based feedback engine.",
+    "feedback": [
+        {
+            "metric": "head_movement_start_to_contact",
+            "status": "good",
+            "statement": "Head movement stayed controlled from movement start to contact proxy.",
+            "evidence": "Measured value: 0.0240 normalized units. V1 good threshold: < 0.05.",
+            "confidence": "medium"
+        }
+    ],
+    "warnings": [
+        {
+            "metric": "hip_drift_start_to_contact",
+            "warning": "Hip drift is not evaluated in Module 6 v1 because the current landmark data was normalized around the hip center in Module 3."
+        }
+    ]
+}
+```
+
+---
+
+### Current feedback checks
+
+#### Head Stability
+
+Metric:
+
+```text
+head_movement_start_to_contact
+```
+
+Purpose:
+
+```text
+Evaluate whether the hitter's head stayed relatively stable from movement start to contact proxy.
+```
+
+Current v1 thresholds:
+
+```text
+good: value < 0.05
+warning: 0.05 <= value <= 0.10
+issue: value > 0.10
+```
+
+The current Mike Trout sample was well within the good range, which makes sense visually because elite hitters usually keep the head controlled through the swing.
+
+---
+
+#### Hand Path
+
+Metric:
+
+```text
+hand_path_start_to_contact
+```
+
+Purpose:
+
+```text
+Evaluate whether the hands took a reasonable movement path from movement start to contact proxy.
+```
+
+Current v1 thresholds:
+
+```text
+good: value < 0.45
+warning: 0.45 <= value <= 0.65
+issue: value > 0.65
+```
+
+This is a v1 hand path efficiency proxy. It is not a perfect swing-quality metric yet, but it gives the system a way to flag swings where the hands appear to travel a longer path.
+
+---
+
+#### Shoulder Rotation Proxy
+
+Metric:
+
+```text
+shoulder_angle_change_start_to_contact
+```
+
+Purpose:
+
+```text
+Evaluate whether shoulder angle change is within an expected range from movement start to contact proxy.
+```
+
+Current v1 thresholds:
+
+```text
+good: 25 <= value <= 65 degrees
+warning: 15 <= value < 25 degrees
+warning: 65 < value <= 80 degrees
+issue: value < 15 degrees or value > 80 degrees
+```
+
+This metric uses the line between the left and right shoulder landmarks as a simple v1 rotation proxy.
+
+---
+
+#### Timing
+
+Metric:
+
+```text
+frames_start_to_contact
+```
+
+Purpose:
+
+```text
+Evaluate whether the time from movement start to contact proxy is within a believable frame range.
+```
+
+Current v1 thresholds:
+
+```text
+good: 10 <= value <= 25 frames
+warning: 8 <= value < 10 frames
+warning: 25 < value <= 35 frames
+issue: value < 8 frames or value > 35 frames
+```
+
+This keeps the timing feedback simple and frame-based for now.
+
+---
+
+### Why hardcoded thresholds were used
+
+Hardcoded thresholds were used because this is a v1 feedback engine.
+
+The goal right now is not to discover perfect swing thresholds. The goal is to create a working interpretation layer that can turn feature values into readable feedback.
+
+The current thresholds are based on:
+
+```text
+early testing
+baseball reasoning
+the Mike Trout sample output
+directional expectations
+```
+
+These thresholds are temporary.
+
+They should later be refined by running more swing videos through the same pipeline and comparing feature distributions.
+
+---
+
+### Known limitations
+
+#### Hip drift is not evaluated yet
+
+Metric:
+
+```text
+hip_drift_start_to_contact
+```
+
+Hip drift is not currently used for feedback.
+
+Reason:
+
+```text
+Module 3 normalized each frame around the hip center.
+```
+
+Because of that, the hip center is basically forced to stay near the origin. This makes hip drift appear almost zero by design.
+
+This is not a feedback engine issue. It is a data representation issue.
+
+Future fix:
+
+```text
+Save both normalized landmarks and non-normalized cleaned landmarks.
+```
+
+Then use:
+
+```text
+normalized landmarks → body-relative mechanics
+non-normalized cleaned landmarks → body translation / drift metrics
+```
+
+---
+
+### Engineering decisions
+
+The main design decision was to keep Module 6 simple.
+
+A separate pipeline file was not needed yet because Module 6 only interprets the feature dictionary produced by Module 5.
+
+The current structure is:
+
+```text
+feedback_engine.py = owns feedback logic
+main.py = temporary test launcher
+```
+
+This is enough for v1 because the module is only doing rule-based interpretation.
+
+The long file length mainly comes from repeated if-else logic and detailed feedback statements, not from complicated architecture.
+
+---
+
+### Why this module matters
+
+Module 6 is where the project starts to become useful to a person.
+
+Before this module, the system could calculate numbers.
+
+After this module, the system can explain those numbers.
+
+The project flow is now:
+
+```text
+video
+→ pose landmarks
+→ cleaned landmarks
+→ detected events
+→ extracted features
+→ evidence-backed feedback
+```
+
+This is a major step because the system is no longer just processing data. It is starting to produce human-readable analysis.
+
+---
+
+### Future improvement path
+
+The long-term plan for feedback is:
+
+```text
+V1: hardcoded if-else thresholds
+V2: thresholds refined using more swing samples
+V3: dynamic thresholds based on feature distributions
+V4: ML-assisted swing evaluation
+```
+
+The side-view college swing clips can eventually be used as a test set or validation set.
+
+Those swings can be processed through the same pipeline to build a feature table:
+
+```text
+player
+head_movement
+hand_path
+shoulder_angle_change
+frames_start_to_contact
+feedback status
+```
+
+That data can later help improve the thresholds or train a model to recognize stronger and weaker swing patterns.
+
+---
+
+### Project ownership lesson
+
+Module 6 was quick to build because the structure was already clear.
+
+The important part was understanding what the module should own:
+
+```text
+Module 5 calculates metrics.
+Module 6 interprets metrics.
+```
+
+This showed why modularity matters. Since the previous modules were separated cleanly, adding the feedback engine was straightforward.
+
+The if-else logic is simple, but it fits the current stage of the project. The complexity can come later after the full v1 pipeline works end to end.
+
+The main lesson from Module 6 is:
+
+```text
+Simple logic is fine when the module responsibility is clear.
+```
+
+---
+
+### Status
+
+Module 6 is complete enough for v1.
+
+Current status:
+
+```text
+Module 5 feature dictionary
+→ Module 6 rule-based feedback
+→ summary, feedback statements, evidence, and warnings
+```
+
+The next step is Module 7: Visualization / Debug Output.
+
+Module 7 should visually prove the numbers and feedback by drawing useful information over the swing frames or output images.
 
 ---
 
