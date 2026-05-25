@@ -1326,19 +1326,488 @@ Module 7 should visually prove the numbers and feedback by drawing useful inform
 
 ---
 
-## Module 7: Visualization / Report
-**Purpose:** Show proof.
+## Module 7: Visualization / Report Assets
+
+**Purpose:** Show visual proof for the detected events, extracted features, and generated feedback.
+
+Module 7 creates visual outputs from the data already produced by earlier modules. The goal is not to add new swing logic. The goal is to make the system easier to inspect, debug, and eventually present in a final report/demo.
 
 ### Responsibilities
-- key-frame plots
-- trajectory plots
-- metric-over-time charts
-- simple final report
+
+- create key-frame images for detected swing events
+- create trajectory plots for important landmarks
+- create metric / feature summary charts
+- create timing event visualizations
+- save visual assets for debugging and reporting
+- provide visual proof for earlier module outputs
 
 ### Outputs
-- images
-- plots
-- report assets
+
+- key-frame images
+- trajectory plots
+- timing event chart
+- feature summary chart
+- report/debug assets
+
+---
+
+### Module 7 Completion Notes
+
+**Completed:** 5/25/26
+
+Module 7 is complete for the first version of the project. The system can now load the original video, cleaned pose landmarks, detected swing events, and extracted feature values, then create visual proof assets.
+
+This module connects:
+
+```text
+original video
++ cleaned landmarks
++ detected events
++ extracted features
+→ visualization outputs
+```
+
+Earlier modules answer:
+
+```text
+Module 4 = What swing events were detected?
+Module 5 = What features were calculated?
+Module 6 = What feedback was generated?
+```
+
+Module 7 answers:
+
+```text
+Can we visually inspect and prove those results?
+```
+
+---
+
+### What was built
+
+- `visualizer.py`
+  - defines `SwingVisualizer`
+  - saves key event frames from the original video
+  - plots hand path trajectory
+  - plots head movement trajectory
+  - plots a feature summary chart
+  - plots a detected event timeline
+  - saves all visualization outputs to a selected output folder
+
+- `visualization_pipeline.py`
+  - loads cleaned landmark data
+  - loads detected event JSON data
+  - loads extracted feature JSON data
+  - creates the `SwingVisualizer` object
+  - runs all visualization methods
+  - saves visual outputs to disk
+
+- `main.py`
+  - temporarily runs Module 5 feature extraction
+  - runs Module 6 feedback generation
+  - runs Module 7 visualization generation
+  - prints the visualization output folder
+
+---
+
+### Current input files
+
+```text
+data/raw/mike_trout_swing_01.mp4
+data/processed/pose/mike_trout_swing_01_pose_cleaned.npy
+data/processed/events/mike_trout_swing_01_events.json
+data/processed/features/mike_trout_swing_01_features.json
+```
+
+---
+
+### Current output folder
+
+```text
+outputs/visualizations/mike_trout_swing_01/
+```
+
+Current output files:
+
+```text
+key_frame_movement_start.jpg
+key_frame_peak_hand_speed.jpg
+key_frame_contact_proxy.jpg
+hand_path_plot.png
+head_path_plot.png
+feature_summary.png
+timing_events.png
+```
+
+---
+
+### Current visualizations
+
+#### Key Event Frames
+
+Files:
+
+```text
+key_frame_movement_start.jpg
+key_frame_peak_hand_speed.jpg
+key_frame_contact_proxy.jpg
+```
+
+Purpose:
+
+```text
+Show the actual video frames where the event detector marked important swing moments.
+```
+
+Current detected events:
+
+```text
+movement_start = frame 3
+peak_hand_speed = frame 18
+contact_proxy = frame 21
+```
+
+These images were useful because they allowed visual inspection of whether Module 4 detected reasonable event frames.
+
+For the Mike Trout sample, the key frames looked directionally believable.
+
+---
+
+#### Timing Event Timeline
+
+File:
+
+```text
+timing_events.png
+```
+
+Purpose:
+
+```text
+Show detected swing events on a simple frame-index timeline.
+```
+
+This chart helps visualize the spacing between:
+
+```text
+movement start
+peak hand speed
+contact proxy
+```
+
+For the current sample:
+
+```text
+movement_start → frame 3
+peak_hand_speed → frame 18
+contact_proxy → frame 21
+```
+
+This supports the timing metrics calculated in Module 5.
+
+---
+
+#### Head Movement Trajectory
+
+File:
+
+```text
+head_path_plot.png
+```
+
+Purpose:
+
+```text
+Plot the nose/head landmark path across frames.
+```
+
+This visual supports:
+
+```text
+head_movement_start_to_contact
+```
+
+The plot showed some expected landmark noise, but the measured value was still small for the movement start to contact proxy window.
+
+Important note:
+
+```text
+MediaPipe landmarks can jitter slightly frame-to-frame.
+```
+
+This is especially true during fast motion, blur, or partial occlusion.
+
+---
+
+#### Hand Path Trajectory
+
+File:
+
+```text
+hand_path_plot.png
+```
+
+Purpose:
+
+```text
+Plot left and right wrist movement paths across frames.
+```
+
+This visual supports:
+
+```text
+hand_path_start_to_contact
+```
+
+The hand path plot showed more motion than the head path, which makes sense because the hands travel aggressively during the swing while the head should remain more controlled.
+
+Some noise is expected because wrists move quickly and are more likely to blur or be partially occluded.
+
+---
+
+#### Feature Summary Chart
+
+File:
+
+```text
+feature_summary.png
+```
+
+Purpose:
+
+```text
+Show selected Module 5 feature values in one quick debug chart.
+```
+
+Current plotted values:
+
+```text
+Head Movement
+Hand Path
+Shoulder Angle
+Start to Contact
+```
+
+Important limitation:
+
+This chart mixes different units:
+
+```text
+Head Movement = normalized landmark units
+Hand Path = normalized landmark units
+Shoulder Angle = degrees
+Start to Contact = frames
+```
+
+Because of this, the `Value` axis is only a raw numeric value axis.
+
+The bars should not be compared directly as if they are measuring the same kind of quantity.
+
+For example, shoulder angle dominates the chart because a value like `48 degrees` is numerically much larger than a normalized movement value like `0.35`.
+
+This chart is useful as a quick debug view, but it is not a clean scientific comparison chart yet.
+
+Future improvement:
+
+```text
+distance_metrics.png
+angle_metrics.png
+timing_metrics.png
+```
+
+This would separate charts by unit type.
+
+---
+
+### Engineering decisions
+
+The main design decision was to keep visualization separate from calculation and feedback.
+
+The structure is:
+
+```text
+Module 5 = calculate features
+Module 6 = interpret features
+Module 7 = visualize proof
+```
+
+This keeps each module responsible for one major job.
+
+Module 7 does not change feature values or feedback logic. It only displays data that previous modules already produced.
+
+---
+
+### Why two files were enough
+
+Two main files were enough for this module:
+
+```text
+visualizer.py = owns plotting and frame-saving methods
+visualization_pipeline.py = owns loading data and running the visualizer
+```
+
+This matches the existing project pattern:
+
+```text
+tool/class file = reusable logic
+pipeline file = connects inputs and outputs
+```
+
+This module did not need more structure because the graphs are simple and the purpose is visual debugging.
+
+---
+
+### Why Python was enough
+
+Python is enough for v1 visualization.
+
+Current tools:
+
+```text
+OpenCV = read video frames and write labeled key-frame images
+Matplotlib = create plots and charts
+NumPy = access landmark arrays
+JSON = load event and feature data
+```
+
+No R or separate reporting tool is needed for the current version.
+
+---
+
+### Important observations from testing
+
+The first Module 7 test successfully generated all expected visual assets.
+
+The key event frames were the most immediately useful because they showed the exact video frames tied to the detected swing events.
+
+The trajectory plots worked, but showed expected noise due to landmark jitter and fast swing movement.
+
+The feature summary chart worked, but revealed that mixed-unit charts should be treated as debug-only.
+
+Main observations:
+
+```text
+key event frames are useful for validating event detection
+trajectory plots can show noise from landmark jitter
+feature summary charts should not mix units long-term
+plots should eventually focus on the movement_start → contact_proxy window
+```
+
+---
+
+### Known limitations
+
+#### Trajectory plots include extra frames
+
+The current trajectory plots can include more than just the main swing window.
+
+Future improvement:
+
+```text
+plot only movement_start → contact_proxy
+```
+
+This would make the visuals more directly tied to the calculated feature values.
+
+---
+
+#### Feature summary chart mixes units
+
+The current feature summary chart mixes:
+
+```text
+normalized movement units
+degrees
+frames
+```
+
+This makes the chart useful for quick debugging but not for direct metric comparison.
+
+Future improvement:
+
+```text
+separate charts by metric type / unit type
+```
+
+---
+
+#### Key frames do not yet include pose overlays
+
+The current key event images only show the raw frame with a text label.
+
+Future improvement:
+
+```text
+draw pose landmarks or tracked points on key event frames
+```
+
+This would make the visual proof stronger.
+
+---
+
+### Future improvements
+
+Possible improvements after v1:
+
+```text
+plot only the event window instead of all frames
+separate distance, angle, and timing charts
+draw pose landmarks on key frames
+draw wrist/head trajectory directly on video frames
+create side-by-side event frame comparison image
+add feedback text onto visualization outputs
+create an annotated video clip
+generate a simple HTML or Markdown report
+```
+
+The most useful near-term improvements are:
+
+```text
+1. Restrict trajectory plots to movement_start → contact_proxy.
+2. Split mixed-unit charts by unit type.
+3. Add landmark overlays to key event frames.
+```
+
+---
+
+### Project ownership lesson
+
+Module 7 showed why visual proof matters.
+
+The earlier modules produced numbers and feedback, but the visualizations made those outputs easier to inspect.
+
+The module also revealed limitations that were not obvious from the numbers alone.
+
+This is the point of visualization:
+
+```text
+not just to make the project look better,
+but to help validate whether the pipeline is telling the truth.
+```
+
+The main lesson from Module 7 is:
+
+```text
+Visual debugging turns abstract metrics into inspectable evidence.
+```
+
+---
+
+### Status
+
+Module 7 is complete enough for v1.
+
+Current status:
+
+```text
+previous module outputs
+→ visualization pipeline
+→ saved proof assets
+```
+
+The next step is Module 8: final end-to-end demo / report packaging.
+
+Module 8 should focus on connecting the full v1 pipeline into one clean final run and summarizing the project output.
 
 ---
 
