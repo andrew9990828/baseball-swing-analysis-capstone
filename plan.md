@@ -1812,19 +1812,370 @@ Module 8 should focus on connecting the full v1 pipeline into one clean final ru
 ---
 
 ## Module 8: Evaluation
-**Purpose:** Verify whether results are stable and believable.
+
+**Purpose:** Verify whether the v1 pipeline results are stable, believable, and honestly documented.
+
+Module 8 evaluates the outputs from the completed v1 pipeline. The goal is not to add new swing mechanics or new feedback logic. The goal is to check whether the system ran end-to-end, whether the outputs are believable, and whether the current limitations are clearly documented.
 
 ### Responsibilities
-- inspect metric consistency
-- compare across sample videos
-- track failure cases
-- document assumptions and limitations
+
+- inspect whether the full pipeline runs end-to-end
+- review detected event frames visually
+- inspect whether feature values are directionally believable
+- verify that feedback statements match the extracted metrics
+- document assumptions, limitations, and failure cases
+- prepare the system for future multi-video evaluation
 
 ### Outputs
-- test notes
-- evaluation results
-- failure log
 
+- evaluation notes
+- single-sample evaluation report
+- failure / limitation log
+- future validation plan
+
+---
+
+### Module 8 Completion Notes
+
+**Completed:** 5/25/26
+
+Module 8 is complete for the first version of the project. The system can now take outputs from the previous modules and create a simple markdown evaluation report.
+
+This module connects:
+
+```text
+detected events
++ extracted features
++ feedback output
++ visualization assets
+→ evaluation report
+```
+
+The evaluation report is currently saved as:
+
+```text
+outputs/report/mike_trout_swing_01_evaluation.md
+```
+
+---
+
+### What was built
+
+- `evaluator.py`
+  - defines `SwingEvaluator`
+  - checks whether detected events occur in a believable order
+  - checks whether required feature values exist
+  - checks whether feature values are directionally believable
+  - checks whether feedback output has the expected structure
+  - checks whether visualization files were created
+  - documents known limitations
+  - builds a markdown evaluation report
+  - saves the report to disk
+
+- `main.py`
+  - now runs Module 5 feature extraction
+  - runs Module 6 feedback generation
+  - runs Module 7 visualization output
+  - runs Module 8 evaluation report generation
+
+---
+
+### Current input sources
+
+Module 8 uses outputs from earlier modules:
+
+```text
+data/processed/events/mike_trout_swing_01_events.json
+data/processed/features/mike_trout_swing_01_features.json
+outputs/visualizations/mike_trout_swing_01/
+```
+
+It also receives the Module 6 feedback output during the current run.
+
+---
+
+### Current output
+
+```text
+outputs/report/mike_trout_swing_01_evaluation.md
+```
+
+The report includes:
+
+```text
+pipeline status
+detected events
+extracted features
+feedback summary
+feedback items
+evaluation notes
+failure / review notes
+known limitations
+evaluation conclusion
+```
+
+---
+
+### Evaluation scope
+
+This is a single-sample evaluation.
+
+The current v1 system only uses one active test video:
+
+```text
+mike_trout_swing_01.mp4
+```
+
+Because of that, Module 8 does not claim full accuracy or full validation across many hitters.
+
+The purpose is to confirm:
+
+```text
+Does the pipeline work end-to-end on one sample?
+Are the outputs believable?
+Are the limitations documented honestly?
+```
+
+This is better described as:
+
+```text
+single-sample pipeline evaluation
+```
+
+not:
+
+```text
+full dataset validation
+```
+
+---
+
+### Current evaluation checks
+
+#### Event Order Check
+
+Checks whether the detected events occur in this order:
+
+```text
+movement start → peak hand speed → contact proxy
+```
+
+For the current Mike Trout sample:
+
+```text
+movement_start = frame 3
+peak_hand_speed = frame 18
+contact_proxy = frame 21
+```
+
+This order is believable for the v1 event detection system.
+
+---
+
+#### Feature Value Check
+
+Checks whether required v1 features exist:
+
+```text
+head_movement_start_to_contact
+hand_path_start_to_contact
+hip_drift_start_to_contact
+shoulder_angle_change_start_to_contact
+frames_start_to_contact
+frames_start_to_peak_hand_speed
+frames_peak_hand_speed_to_contact
+```
+
+Then it checks whether some values are directionally believable.
+
+Examples:
+
+```text
+head movement should usually be lower than hand path distance
+shoulder angle change should be within a broad believable range
+movement start to contact should be within a broad believable frame range
+```
+
+This does not prove the metrics are perfect. It only confirms that the current output is not obviously broken.
+
+---
+
+#### Feedback Output Check
+
+Checks whether Module 6 produced the expected feedback structure:
+
+```text
+summary
+feedback
+warnings
+```
+
+This confirms that the feedback engine created readable statements with evidence and warning flags.
+
+---
+
+#### Visualization Output Check
+
+Checks whether Module 7 created the expected visual files:
+
+```text
+key_frame_movement_start.jpg
+key_frame_peak_hand_speed.jpg
+key_frame_contact_proxy.jpg
+hand_path_plot.png
+head_path_plot.png
+feature_summary.png
+timing_events.png
+```
+
+This confirms that the project created visual proof assets for the v1 output.
+
+---
+
+### Known limitations documented
+
+Module 8 documents the main v1 limitations:
+
+```text
+only one sample video is currently evaluated
+contact is still a proxy because the bat and ball are not tracked
+distance metrics are normalized coordinate units, not real-world units
+hip drift is unreliable because landmarks were normalized around the hip center
+feedback thresholds are hardcoded v1 placeholders
+MediaPipe landmarks can jitter during fast motion, blur, or occlusion
+```
+
+These limitations are important because the v1 system should not be oversold.
+
+---
+
+### Why Module 8 matters
+
+Module 8 is about honesty and validation.
+
+The earlier modules made the system work.
+
+Module 8 asks:
+
+```text
+What worked?
+What looked believable?
+What needs review?
+What assumptions were made?
+What should be tested next?
+```
+
+This makes the project stronger because it separates working code from proven accuracy.
+
+The project now has an evaluation layer instead of just a pipeline that prints outputs.
+
+---
+
+### Engineering decisions
+
+The main design decision was to make Module 8 a report generator instead of another mechanics module.
+
+The structure is:
+
+```text
+Module 5 = calculate features
+Module 6 = interpret features
+Module 7 = visualize proof
+Module 8 = evaluate and document the v1 result
+```
+
+This kept the final module focused.
+
+Module 8 does not change feature values, feedback rules, or visual outputs. It only checks and summarizes them.
+
+---
+
+### Current v1 pipeline
+
+With Module 8 complete, the full v1 pipeline is:
+
+```text
+video
+→ frame ingestion
+→ pose extraction
+→ landmark processing
+→ event detection
+→ feature extraction
+→ feedback engine
+→ visualization assets
+→ evaluation report
+```
+
+This means v1 is now complete.
+
+---
+
+### Future validation plan
+
+After v1, the next step is to test the same pipeline on more side-view swing clips.
+
+Future evaluation steps:
+
+```text
+run the full pipeline on more swing samples
+save feature JSON for each swing
+compare feature distributions
+track when pose detection fails
+track when event detection is visually wrong
+track when feedback does not match the video
+adjust thresholds using real swing data
+build a small validation set
+eventually train ML models on extracted feature vectors
+```
+
+The side-view college swing clips can become the first post-v1 validation set.
+
+---
+
+### Project ownership lesson
+
+Module 8 made the project feel complete because it forced the system to explain itself.
+
+The main lesson is:
+
+```text
+A project is not finished just because the code runs.
+A project is stronger when the outputs are evaluated, limitations are documented, and the next testing path is clear.
+```
+
+This was the first full v1 pipeline that felt owned from end to end.
+
+The project now has structure, outputs, evidence, and a future path.
+
+---
+
+### Status
+
+Module 8 is complete enough for v1.
+
+Current status:
+
+```text
+previous module outputs
+→ evaluator
+→ markdown evaluation report
+```
+
+V1 status:
+
+```text
+complete
+```
+
+The next phase is post-v1 improvement:
+
+```text
+clean up weak metrics
+test more swing clips
+refine hardcoded thresholds
+improve visualizations
+prepare for data-informed or ML-assisted evaluation
+```
 ---
 
 # 7. Rule-Based vs ML-Based Split
