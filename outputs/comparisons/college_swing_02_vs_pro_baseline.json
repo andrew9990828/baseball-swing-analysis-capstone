@@ -1,0 +1,99 @@
+{
+    "sample_name": "college_swing_02",
+    "features_path": "data\\processed\\features\\college_swing_02_features.json",
+    "baseline_path": "outputs\\aggregate\\pro_baseline.json",
+    "core_results": [
+        {
+            "metric": "head_movement_start_to_contact",
+            "label": "Head movement",
+            "unit": "normalized units",
+            "sample_value": 0.05748020485043526,
+            "pro_median": 0.04375474900007248,
+            "pro_q1": 0.02865154668688774,
+            "pro_q3": 0.0652460977435112,
+            "pro_count": 9,
+            "status": "within_pro_middle_50",
+            "interpretation": "The sample value falls within the middle 50% range of the pro baseline.",
+            "note": "Lower values generally suggest more head stability through the swing window.",
+            "difference_from_median": 0.013725455850362778,
+            "percent_difference_from_median": 31.36906544782154
+        },
+        {
+            "metric": "hand_path_start_to_contact",
+            "label": "Hand path distance",
+            "unit": "normalized units",
+            "sample_value": 0.25755963800475,
+            "pro_median": 1.0801433035812806,
+            "pro_q1": 0.5215627206489444,
+            "pro_q3": 1.0928840182023123,
+            "pro_count": 9,
+            "status": "below_pro_middle_50",
+            "interpretation": "The sample value is below the middle 50% range of the pro baseline.",
+            "note": "Measures wrist-path movement from swing start to contact proxy.",
+            "difference_from_median": -0.8225836655765306,
+            "percent_difference_from_median": -76.15504932069705
+        },
+        {
+            "metric": "frames_peak_hand_speed_to_contact",
+            "label": "Peak hand speed to contact",
+            "unit": "frames",
+            "sample_value": 3.0,
+            "pro_median": 3.0,
+            "pro_q1": 3.0,
+            "pro_q3": 3.0,
+            "pro_count": 10,
+            "status": "within_pro_middle_50",
+            "interpretation": "The sample value falls within the middle 50% range of the pro baseline.",
+            "note": "Measures how many frames occur between peak wrist speed and the contact proxy.",
+            "difference_from_median": 0.0,
+            "percent_difference_from_median": 0.0
+        }
+    ],
+    "experimental_results": [
+        {
+            "metric": "shoulder_angle_change_start_to_contact",
+            "label": "Shoulder angle change",
+            "unit": "degrees",
+            "sample_value": 326.6200256347656,
+            "pro_median": 169.32267379760742,
+            "pro_q1": 45.65263366699219,
+            "pro_q3": 291.1010284423828,
+            "pro_count": 9,
+            "status": "above_pro_middle_50",
+            "interpretation": "The sample value is above the middle 50% range of the pro baseline.",
+            "note": "Experimental. Current angle calculation may suffer from wraparound artifacts.",
+            "difference_from_median": 157.2973518371582,
+            "percent_difference_from_median": 92.89798484116595
+        },
+        {
+            "metric": "frames_start_to_contact",
+            "label": "Movement start to contact",
+            "unit": "frames",
+            "sample_value": 9.0,
+            "pro_median": 30.0,
+            "pro_q1": 13.25,
+            "pro_q3": 64.75,
+            "pro_count": 10,
+            "status": "below_pro_middle_50",
+            "interpretation": "The sample value is below the middle 50% range of the pro baseline.",
+            "note": "Experimental. Sensitive to clip trimming, speed, and event detection quality.",
+            "difference_from_median": -21.0,
+            "percent_difference_from_median": -70.0
+        },
+        {
+            "metric": "frames_start_to_peak_hand_speed",
+            "label": "Movement start to peak hand speed",
+            "unit": "frames",
+            "sample_value": 6.0,
+            "pro_median": 27.5,
+            "pro_q1": 10.25,
+            "pro_q3": 62.5,
+            "pro_count": 10,
+            "status": "below_pro_middle_50",
+            "interpretation": "The sample value is below the middle 50% range of the pro baseline.",
+            "note": "Experimental. Sensitive to clip trimming, speed, and event detection quality.",
+            "difference_from_median": -21.5,
+            "percent_difference_from_median": -78.18181818181819
+        }
+    ]
+}

@@ -1,0 +1,66 @@
+{
+    "group": "pro",
+    "sample_count": 10,
+    "features": {
+        "head_movement_start_to_contact": {
+            "count": 9,
+            "median": 0.04375474900007248,
+            "q1": 0.02865154668688774,
+            "q3": 0.0652460977435112,
+            "iqr": 0.03659455105662346,
+            "min": 0.01316351443529129,
+            "max": 0.10066162794828415
+        },
+        "hand_path_start_to_contact": {
+            "count": 9,
+            "median": 1.0801433035812806,
+            "q1": 0.5215627206489444,
+            "q3": 1.0928840182023123,
+            "iqr": 0.5713212975533679,
+            "min": 0.1844381656846963,
+            "max": 1.3056764120119624
+        },
+        "shoulder_angle_change_start_to_contact": {
+            "count": 9,
+            "median": 169.32267379760742,
+            "q1": 45.65263366699219,
+            "q3": 291.1010284423828,
+            "iqr": 245.44839477539062,
+            "min": 5.0921783447265625,
+            "max": 323.7165832519531
+        },
+        "frames_start_to_contact": {
+            "count": 10,
+            "median": 30.0,
+            "q1": 13.25,
+            "q3": 64.75,
+            "iqr": 51.5,
+            "min": 4.0,
+            "max": 132.0
+        },
+        "frames_start_to_peak_hand_speed": {
+            "count": 10,
+            "median": 27.5,
+            "q1": 10.25,
+            "q3": 62.5,
+            "iqr": 52.25,
+            "min": 1.0,
+            "max": 129.0
+        },
+        "frames_peak_hand_speed_to_contact": {
+            "count": 10,
+            "median": 3.0,
+            "q1": 3.0,
+            "q3": 3.0,
+            "iqr": 0.0,
+            "min": 2.0,
+            "max": 3.0
+        }
+    },
+    "notes": [
+        "Baseline uses median and interquartile range because the sample size is small.",
+        "Values are pose-derived metrics, not ground-truth biomechanics measurements.",
+        "This should be described as a professional sample baseline, not an ideal swing model.",
+        "Hip drift is intentionally excluded because current cleaned landmarks are normalized around the hip center."
+    ]
+}
